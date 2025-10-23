@@ -1,6 +1,6 @@
-# Aplikasi Manajemen Surat
+# Aplikasi Manajemen Surat (e-Agenda)
 
-Aplikasi Android untuk manajemen surat masuk dan keluar dengan fitur tracking, disposisi, dan tanda tangan digital.
+Aplikasi Android untuk tata kelola agenda surat dengan fitur tracking, disposisi, dan tanda tangan digital.
 
 ## 🚀 Fitur
 
@@ -10,7 +10,6 @@ Aplikasi Android untuk manajemen surat masuk dan keluar dengan fitur tracking, d
 - ✅ **Disposisi** - Tanda tangan digital langsung di HP
 - ✅ **Upload File** - Scan atau upload PDF
 - ✅ **Filter & Search** - Cari surat dengan mudah
-- ✅ **Dark Mode** - Support tema gelap
 - ✅ **Role Based Access** - Admin dan User
 - ✅ **Dashboard** - Statistik surat hari ini
 
@@ -134,7 +133,7 @@ This project is private and proprietary.
 ## 👨‍💻 Author
 
 **Nama Anda**
-- GitHub: [@username](https://github.com/username)
+- GitHub: [@andilamujinci-alt](https://github.com/andilamujinci-alt)
 - Email: email@anda.com
 
 ## 🙏 Acknowledgments
