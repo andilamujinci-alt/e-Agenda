@@ -23,7 +23,7 @@ Aplikasi Android untuk tata kelola agenda surat dengan fitur tracking, disposisi
 
 ### 1. Clone Repository
 ```bash
-git clone https://github.com/username/aplikasi-manajemen-surat.git
+git clone https://github.com/andilamujinci-alt/e-Agenda.git
 cd aplikasi-manajemen-surat
 ```
 
