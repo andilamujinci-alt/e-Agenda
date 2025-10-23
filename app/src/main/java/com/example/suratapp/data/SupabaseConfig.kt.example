@@ -1,0 +1,8 @@
+
+// Copy file ini ke SupabaseConfig.kt dan isi dengan credentials Anda
+package com.example.suratapp.data
+
+object SupabaseConfig {
+    const val SUPABASE_URL = "https://xxxxx.supabase.co"
+    const val SUPABASE_ANON_KEY = "your_anon_key_here"
+}
