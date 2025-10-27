@@ -166,9 +166,9 @@ class DetailSuratActivity : AppCompatActivity() {
     private fun setupButtons() {
         // Update text button disposisi sesuai tipe surat
         if (suratType == "masuk") {
-            binding.btnDisposisi.text = "Disposisi / Terima Surat"
+            binding.btnDisposisi.text = "TTD Penerima Disposisi"
         } else {
-            binding.btnDisposisi.text = "Kirim Surat"
+            binding.btnDisposisi.text = "TTD Penerima Surat"
         }
 
         binding.btnUpdateStatus.setOnClickListener {
@@ -370,7 +370,7 @@ class DetailSuratActivity : AppCompatActivity() {
                 binding.btnDelete.text = "Menghapus..."
             } else {
                 binding.btnUpdateStatus.text = "Update Status"
-                binding.btnDisposisi.text = if (suratType == "masuk") "Disposisi / Terima Surat" else "Kirim Surat"
+                binding.btnDisposisi.text = if (suratType == "masuk") "TTD Penerima Disposisi" else "TTD Penerima Surat"
                 binding.btnDelete.text = "Hapus Surat"
             }
         }
