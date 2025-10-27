@@ -1,4 +1,3 @@
-// InputSuratViewModel.kt
 package com.example.suratapp.ui.input
 
 import android.app.Application
@@ -28,32 +27,14 @@ class InputSuratViewModel(application: Application) : AndroidViewModel(applicati
     private val _duplicateCheck = MutableLiveData<DuplicateCheckResult>()
     val duplicateCheck: LiveData<DuplicateCheckResult> = _duplicateCheck
 
-    // Check duplicate sebelum save
-    fun checkDuplicate(type: String, nomorSurat: String, nomorAgenda: String) {
+    // 🔍 Cek duplikat berdasarkan nomorAgenda saja, lintas surat masuk & keluar
+    fun checkDuplicateNomorAgenda(nomorAgenda: String) {
         viewModelScope.launch {
             try {
-                val isDuplicateNomorSurat = if (type == "masuk") {
-                    repository.checkDuplicateSuratMasukByNomorSurat(nomorSurat)
-                } else {
-                    repository.checkDuplicateSuratKeluarByNomorSurat(nomorSurat)
-                }
-
-                val isDuplicateNomorAgenda = if (type == "masuk") {
-                    repository.checkDuplicateSuratMasukByNomorAgenda(nomorAgenda)
-                } else {
-                    repository.checkDuplicateSuratKeluarByNomorAgenda(nomorAgenda)
-                }
-
-                _duplicateCheck.value = DuplicateCheckResult(
-                    isDuplicateNomorSurat = isDuplicateNomorSurat,
-                    isDuplicateNomorAgenda = isDuplicateNomorAgenda
-                )
+                val isDuplicate = repository.checkDuplicateNomorAgendaAll(nomorAgenda)
+                _duplicateCheck.value = DuplicateCheckResult(isDuplicateNomorAgenda = isDuplicate)
             } catch (e: Exception) {
-                _duplicateCheck.value = DuplicateCheckResult(
-                    isDuplicateNomorSurat = false,
-                    isDuplicateNomorAgenda = false,
-                    error = e.message
-                )
+                _duplicateCheck.value = DuplicateCheckResult(error = e.message)
             }
         }
     }
@@ -74,37 +55,15 @@ class InputSuratViewModel(application: Application) : AndroidViewModel(applicati
 
         viewModelScope.launch {
             try {
-                // Check duplicate terlebih dahulu
-                val isDuplicateNomorSurat = if (type == "masuk") {
-                    repository.checkDuplicateSuratMasukByNomorSurat(nomorSurat)
-                } else {
-                    repository.checkDuplicateSuratKeluarByNomorSurat(nomorSurat)
-                }
-
-                val isDuplicateNomorAgenda = if (type == "masuk") {
-                    repository.checkDuplicateSuratMasukByNomorAgenda(nomorAgenda)
-                } else {
-                    repository.checkDuplicateSuratKeluarByNomorAgenda(nomorAgenda)
-                }
-
-                // Jika ada duplikat, tampilkan error
-                if (isDuplicateNomorSurat && isDuplicateNomorAgenda) {
-                    _saveResult.value = Pair(false, "Nomor Surat dan Nomor Agenda sudah terdaftar!")
-                    _isLoading.value = false
-                    return@launch
-                } else if (isDuplicateNomorSurat) {
-                    _saveResult.value = Pair(false, "Nomor Surat sudah terdaftar!")
-                    _isLoading.value = false
-                    return@launch
-                } else if (isDuplicateNomorAgenda) {
+                // Cek duplikat nomorAgenda di semua tabel
+                val isDuplicateNomorAgenda = repository.checkDuplicateNomorAgendaAll(nomorAgenda)
+                if (isDuplicateNomorAgenda) {
                     _saveResult.value = Pair(false, "Nomor Agenda sudah terdaftar!")
                     _isLoading.value = false
                     return@launch
                 }
 
                 var fileUrl: String? = null
-
-                // Upload file if exists
                 if (fileUri != null) {
                     val file = uriToFile(fileUri, fileType)
                     fileUrl = repository.uploadFile(file, "surat_files")
@@ -142,10 +101,10 @@ class InputSuratViewModel(application: Application) : AndroidViewModel(applicati
                     repository.insertSuratKeluar(surat)
                 }
 
-                if (result != null) {
-                    _saveResult.value = Pair(true, null)
+                _saveResult.value = if (result != null) {
+                    Pair(true, null)
                 } else {
-                    _saveResult.value = Pair(false, "Gagal menyimpan data ke database")
+                    Pair(false, "Gagal menyimpan data ke database")
                 }
             } catch (e: Exception) {
                 _saveResult.value = Pair(false, e.message ?: "Terjadi kesalahan")
@@ -157,13 +116,10 @@ class InputSuratViewModel(application: Application) : AndroidViewModel(applicati
 
     private fun uriToFile(uri: Uri, fileType: String?): File {
         val inputStream = context.contentResolver.openInputStream(uri)
-
-        // Tentukan extension berdasarkan file type
         val extension = when (fileType) {
             "image" -> ".jpg"
             "pdf" -> ".pdf"
             else -> {
-                // Auto-detect dari URI
                 val mimeType = context.contentResolver.getType(uri)
                 when {
                     mimeType?.startsWith("image/") == true -> ".jpg"
@@ -174,19 +130,13 @@ class InputSuratViewModel(application: Application) : AndroidViewModel(applicati
         }
 
         val file = File(context.cacheDir, "upload_${System.currentTimeMillis()}$extension")
-
-        FileOutputStream(file).use { output ->
-            inputStream?.copyTo(output)
-        }
-
+        FileOutputStream(file).use { output -> inputStream?.copyTo(output) }
         inputStream?.close()
         return file
     }
 }
 
-// Data class untuk hasil check duplicate
 data class DuplicateCheckResult(
-    val isDuplicateNomorSurat: Boolean = false,
     val isDuplicateNomorAgenda: Boolean = false,
     val error: String? = null
 )

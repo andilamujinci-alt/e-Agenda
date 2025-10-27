@@ -82,7 +82,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
-                android:hint="Nomor Agenda"
+                android:hint="Nomor Agenda/Tahun (Contoh: 001/25)"
                 app:boxStrokeColor="@color/purple_500"
                 app:errorEnabled="true">
 

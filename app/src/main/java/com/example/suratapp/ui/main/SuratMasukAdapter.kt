@@ -1,4 +1,3 @@
-// SuratMasukAdapter.kt - Update filterByDate untuk maintain descending order
 package com.example.suratapp.ui.main
 
 import android.view.LayoutInflater
@@ -8,8 +7,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.suratapp.databinding.ItemSuratBinding
 import com.example.suratapp.data.models.SuratMasuk
 import com.example.suratapp.utils.DateUtils
-import java.text.SimpleDateFormat
-import java.util.*
 
 class SuratMasukAdapter(
     private val onItemClick: (SuratMasuk) -> Unit
@@ -19,8 +16,9 @@ class SuratMasukAdapter(
     private var filteredList = listOf<SuratMasuk>()
 
     fun submitList(list: List<SuratMasuk>) {
-        // Sort by tanggal_diterima descending (terbaru di atas)
-        originalList = list.sortedByDescending { it.tanggalDiterima }
+        // Urutkan berdasarkan tahun (setelah "/") lalu nomor (sebelum "/"), descending
+        originalList = list.sortedWith(compareByDescending<SuratMasuk> { extractYearNumber(it.nomorAgenda) }
+            .thenByDescending { extractAgendaNumber(it.nomorAgenda) })
         filteredList = originalList
         notifyDataSetChanged()
     }
@@ -37,28 +35,27 @@ class SuratMasukAdapter(
                         surat.statusSurat.contains(query, ignoreCase = true)
             }
         }
-        // Maintain descending order setelah filter
-        filteredList = filteredList.sortedByDescending { it.tanggalDiterima }
+        filteredList = filteredList.sortedWith(compareByDescending<SuratMasuk> { extractYearNumber(it.nomorAgenda) }
+            .thenByDescending { extractAgendaNumber(it.nomorAgenda) })
         notifyDataSetChanged()
     }
 
-    // SuratMasukAdapter.kt & SuratKeluarAdapter.kt - filterByDate tetap sama
     fun filterByDate(filterType: Int) {
         filteredList = when (filterType) {
-            0 -> originalList // Semua
-            1 -> originalList.filter { it.tanggalDiterima == DateUtils.getTodayDb() } // Hari Ini
-            2 -> { // Minggu Ini
+            0 -> originalList
+            1 -> originalList.filter { it.tanggalDiterima == DateUtils.getTodayDb() }
+            2 -> {
                 val weekStart = DateUtils.getWeekStartDb()
                 originalList.filter { it.tanggalDiterima >= weekStart }
             }
-            3 -> { // Bulan Ini
+            3 -> {
                 val monthStart = DateUtils.getMonthStartDb()
                 originalList.filter { it.tanggalDiterima >= monthStart }
             }
             else -> originalList
         }
-        // Maintain descending order setelah filter
-        filteredList = filteredList.sortedByDescending { it.tanggalDiterima }
+        filteredList = filteredList.sortedWith(compareByDescending<SuratMasuk> { extractYearNumber(it.nomorAgenda) }
+            .thenByDescending { extractAgendaNumber(it.nomorAgenda) })
         notifyDataSetChanged()
     }
 
@@ -68,8 +65,8 @@ class SuratMasukAdapter(
         } else {
             originalList.filter { it.statusSurat.contains(status, ignoreCase = true) }
         }
-        // Maintain descending order setelah filter
-        filteredList = filteredList.sortedByDescending { it.tanggalDiterima }
+        filteredList = filteredList.sortedWith(compareByDescending<SuratMasuk> { extractYearNumber(it.nomorAgenda) }
+            .thenByDescending { extractAgendaNumber(it.nomorAgenda) })
         notifyDataSetChanged()
     }
 
@@ -84,31 +81,42 @@ class SuratMasukAdapter(
 
     override fun getItemCount(): Int = filteredList.size
 
-    // SuratMasukAdapter.kt - Update bind()
-    // SuratMasukAdapter.kt - ViewHolder bind()
     inner class ViewHolder(private val binding: ItemSuratBinding) : RecyclerView.ViewHolder(binding.root) {
-
         fun bind(surat: SuratMasuk) {
             binding.apply {
                 tvNomorSurat.text = surat.nomorSurat
-                // Label "Dari" untuk surat masuk
                 tvPengirim.text = "Dari: ${surat.pengirim}"
                 tvNomorAgenda.text = "No. Agenda: ${surat.nomorAgenda}"
                 tvPerihal.text = surat.perihal
                 tvTanggal.text = DateUtils.formatToDisplay(surat.tanggalDiterima)
                 tvStatus.text = surat.statusSurat
 
-                // Show badge "BARU" jika surat hari ini
                 tvBadgeBaru.visibility = if (DateUtils.isToday(surat.tanggalDiterima)) {
                     View.VISIBLE
                 } else {
                     View.GONE
                 }
 
-                root.setOnClickListener {
-                    onItemClick(surat)
-                }
+                root.setOnClickListener { onItemClick(surat) }
             }
+        }
+    }
+
+
+    private fun extractAgendaNumber(nomorAgenda: String): Int {
+        return try {
+            nomorAgenda.split("/")[0].toIntOrNull() ?: 0
+        } catch (e: Exception) {
+            0
+        }
+    }
+
+
+    private fun extractYearNumber(nomorAgenda: String): Int {
+        return try {
+            nomorAgenda.split("/").getOrNull(1)?.toIntOrNull() ?: 0
+        } catch (e: Exception) {
+            0
         }
     }
 }

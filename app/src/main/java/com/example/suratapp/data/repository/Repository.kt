@@ -362,5 +362,10 @@ class SuratRepository {
         }
     }
 
+    suspend fun checkDuplicateNomorAgendaAll(nomorAgenda: String): Boolean {
+        val masuk = checkDuplicateSuratMasukByNomorAgenda(nomorAgenda)
+        val keluar = checkDuplicateSuratKeluarByNomorAgenda(nomorAgenda)
+        return masuk || keluar
+    }
 
 }
