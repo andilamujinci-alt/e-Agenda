@@ -328,4 +328,39 @@ class SuratRepository {
         }
     }
 
+    // Get Surat Masuk by ID (BARU)
+    suspend fun getSuratMasukById(id: Int): SuratMasuk? {
+        return try {
+            val result = client.from("surat_masuk")
+                .select {
+                    filter {
+                        eq("id", id)
+                    }
+                }
+                .decodeSingleOrNull<SuratMasuk>()
+            result
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    // Get Surat Keluar by ID (BARU)
+    suspend fun getSuratKeluarById(id: Int): SuratKeluar? {
+        return try {
+            val result = client.from("surat_keluar")
+                .select {
+                    filter {
+                        eq("id", id)
+                    }
+                }
+                .decodeSingleOrNull<SuratKeluar>()
+            result
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+
 }

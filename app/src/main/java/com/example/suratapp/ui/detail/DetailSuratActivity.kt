@@ -1,3 +1,4 @@
+// DetailSuratActivity.kt
 package com.example.suratapp.ui.detail
 
 import android.content.Intent
@@ -72,8 +73,6 @@ class DetailSuratActivity : AppCompatActivity() {
         }
     }
 
-    // DetailSuratActivity.kt - Update loadData()
-    // DetailSuratActivity.kt - Update loadData
     private fun loadData() {
         if (suratType == "masuk" && suratMasuk != null) {
             binding.apply {
@@ -164,8 +163,14 @@ class DetailSuratActivity : AppCompatActivity() {
         }
     }
 
-    // Update setupButtons() di DetailSuratActivity.kt
     private fun setupButtons() {
+        // Update text button disposisi sesuai tipe surat
+        if (suratType == "masuk") {
+            binding.btnDisposisi.text = "Disposisi / Terima Surat"
+        } else {
+            binding.btnDisposisi.text = "Kirim Surat"
+        }
+
         binding.btnUpdateStatus.setOnClickListener {
             if (userRole == "admin") {
                 updateStatus()
@@ -178,7 +183,6 @@ class DetailSuratActivity : AppCompatActivity() {
             }
         }
 
-        // Tambahkan button delete
         binding.btnDelete.setOnClickListener {
             if (userRole == "admin") {
                 showDeleteConfirmationDialog()
@@ -202,87 +206,6 @@ class DetailSuratActivity : AppCompatActivity() {
             } else {
                 Toast.makeText(this, "File tidak tersedia", Toast.LENGTH_SHORT).show()
             }
-        }
-    }
-
-    private fun showDeleteConfirmationDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("Hapus Surat")
-            .setMessage("Apakah Anda yakin ingin menghapus surat ini? Data yang dihapus tidak dapat dikembalikan.")
-            .setPositiveButton("Hapus") { dialog, _ ->
-                deleteSurat()
-                dialog.dismiss()
-            }
-            .setNegativeButton("Batal") { dialog, _ ->
-                dialog.dismiss()
-            }
-            .setIcon(android.R.drawable.ic_dialog_alert)
-            .show()
-    }
-
-    private fun deleteSurat() {
-        if (suratType == "masuk" && suratMasuk != null) {
-            viewModel.deleteSuratMasuk(suratMasuk!!.id!!, suratMasuk!!.fileUrl)
-        } else if (suratType == "keluar" && suratKeluar != null) {
-            viewModel.deleteSuratKeluar(suratKeluar!!.id!!, suratKeluar!!.fileUrl)
-        }
-    }
-
-    // Update observeViewModel untuk observe delete result
-    private fun observeViewModel() {
-        viewModel.updateResult.observe(this) { result ->
-            if (result.first) {
-                Toast.makeText(this, "Data berhasil diperbarui", Toast.LENGTH_SHORT).show()
-                finish()
-            } else {
-                Toast.makeText(this, "Gagal memperbarui data: ${result.second}", Toast.LENGTH_LONG).show()
-            }
-        }
-
-        // Observe delete result
-        viewModel.deleteResult.observe(this) { result ->
-            if (result.first) {
-                Toast.makeText(this, "✅ Surat berhasil dihapus", Toast.LENGTH_SHORT).show()
-                finish()
-            } else {
-                Toast.makeText(this, "❌ Gagal menghapus surat: ${result.second}", Toast.LENGTH_LONG).show()
-            }
-        }
-
-        // Observe loading state
-        viewModel.isLoading.observe(this) { isLoading ->
-            binding.btnUpdateStatus.isEnabled = !isLoading
-            binding.btnDisposisi.isEnabled = !isLoading
-            binding.btnDelete.isEnabled = !isLoading
-
-            if (isLoading) {
-                binding.btnDelete.text = "Menghapus..."
-            } else {
-                binding.btnDelete.text = "Hapus Surat"
-            }
-        }
-    }
-
-    // Tambahkan fungsi baru untuk open file
-    private fun openFile(fileUrl: String) {
-        try {
-            val intent = Intent(Intent.ACTION_VIEW)
-            intent.setDataAndType(Uri.parse(fileUrl), getMimeType(fileUrl))
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            startActivity(intent)
-        } catch (e: Exception) {
-            // Fallback: buka di browser
-            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(fileUrl))
-            startActivity(browserIntent)
-        }
-    }
-
-    private fun getMimeType(url: String): String {
-        return when {
-            url.endsWith(".pdf", ignoreCase = true) -> "application/pdf"
-            url.endsWith(".jpg", ignoreCase = true) || url.endsWith(".jpeg", ignoreCase = true) -> "image/jpeg"
-            url.endsWith(".png", ignoreCase = true) -> "image/png"
-            else -> "*/*"
         }
     }
 
@@ -345,7 +268,7 @@ class DetailSuratActivity : AppCompatActivity() {
     }
 
     private fun saveDisposisi(nama: String, tandaTangan: String) {
-        val timestamp = DateUtils.getCurrentTimestamp() // Ambil timestamp saat ini
+        val timestamp = DateUtils.getCurrentTimestamp()
 
         if (suratType == "masuk" && suratMasuk != null) {
             val updatedSurat = suratMasuk!!.copy(
@@ -361,6 +284,119 @@ class DetailSuratActivity : AppCompatActivity() {
                 timestampDisposisi = timestamp
             )
             viewModel.updateSuratKeluar(suratKeluar!!.id!!, updatedSurat)
+        }
+    }
+
+    private fun showDeleteConfirmationDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Hapus Surat")
+            .setMessage("Apakah Anda yakin ingin menghapus surat ini? Data yang dihapus tidak dapat dikembalikan.")
+            .setPositiveButton("Hapus") { dialog, _ ->
+                deleteSurat()
+                dialog.dismiss()
+            }
+            .setNegativeButton("Batal") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setIcon(android.R.drawable.ic_dialog_alert)
+            .show()
+    }
+
+    private fun deleteSurat() {
+        if (suratType == "masuk" && suratMasuk != null) {
+            viewModel.deleteSuratMasuk(suratMasuk!!.id!!, suratMasuk!!.fileUrl)
+        } else if (suratType == "keluar" && suratKeluar != null) {
+            viewModel.deleteSuratKeluar(suratKeluar!!.id!!, suratKeluar!!.fileUrl)
+        }
+    }
+
+    private fun openFile(fileUrl: String) {
+        try {
+            val intent = Intent(Intent.ACTION_VIEW)
+            intent.setDataAndType(Uri.parse(fileUrl), getMimeType(fileUrl))
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            startActivity(intent)
+        } catch (e: Exception) {
+            // Fallback: buka di browser
+            val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(fileUrl))
+            startActivity(browserIntent)
+        }
+    }
+
+    private fun getMimeType(url: String): String {
+        return when {
+            url.endsWith(".pdf", ignoreCase = true) -> "application/pdf"
+            url.endsWith(".jpg", ignoreCase = true) || url.endsWith(".jpeg", ignoreCase = true) -> "image/jpeg"
+            url.endsWith(".png", ignoreCase = true) -> "image/png"
+            else -> "*/*"
+        }
+    }
+
+    // PERUBAHAN UTAMA DI SINI: Refresh data setelah update berhasil
+    private fun observeViewModel() {
+        viewModel.updateResult.observe(this) { result ->
+            if (result.first) {
+                Toast.makeText(this, "✅ Data berhasil diperbarui", Toast.LENGTH_SHORT).show()
+
+                // Refresh data dari database
+                refreshData()
+
+                // HAPUS finish() agar tetap di activity ini
+                // finish() // ← COMMENT ATAU HAPUS BARIS INI
+            } else {
+                Toast.makeText(this, "❌ Gagal memperbarui data: ${result.second}", Toast.LENGTH_LONG).show()
+            }
+        }
+
+        // Observe delete result - tetap finish karena data sudah dihapus
+        viewModel.deleteResult.observe(this) { result ->
+            if (result.first) {
+                Toast.makeText(this, "✅ Surat berhasil dihapus", Toast.LENGTH_SHORT).show()
+                finish() // Kembali ke MainActivity karena data sudah dihapus
+            } else {
+                Toast.makeText(this, "❌ Gagal menghapus surat: ${result.second}", Toast.LENGTH_LONG).show()
+            }
+        }
+
+        // Observe loading state
+        viewModel.isLoading.observe(this) { isLoading ->
+            binding.btnUpdateStatus.isEnabled = !isLoading
+            binding.btnDisposisi.isEnabled = !isLoading
+            binding.btnDelete.isEnabled = !isLoading
+
+            if (isLoading) {
+                binding.btnUpdateStatus.text = "Menyimpan..."
+                binding.btnDisposisi.text = "Menyimpan..."
+                binding.btnDelete.text = "Menghapus..."
+            } else {
+                binding.btnUpdateStatus.text = "Update Status"
+                binding.btnDisposisi.text = if (suratType == "masuk") "Disposisi / Terima Surat" else "Kirim Surat"
+                binding.btnDelete.text = "Hapus Surat"
+            }
+        }
+
+        // Observe refreshed data (BARU)
+        viewModel.refreshedSuratMasuk.observe(this) { surat ->
+            surat?.let {
+                suratMasuk = it
+                loadData()
+            }
+        }
+
+        viewModel.refreshedSuratKeluar.observe(this) { surat ->
+            surat?.let {
+                suratKeluar = it
+                loadData()
+            }
+        }
+    }
+
+    // Fungsi baru untuk refresh data dari database
+    private fun refreshData() {
+        if (suratType == "masuk" && suratMasuk != null) {
+            viewModel.refreshSuratMasuk(suratMasuk!!.id!!)
+        } else if (suratType == "keluar" && suratKeluar != null) {
+            viewModel.refreshSuratKeluar(suratKeluar!!.id!!)
         }
     }
 

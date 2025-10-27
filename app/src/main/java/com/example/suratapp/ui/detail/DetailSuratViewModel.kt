@@ -28,6 +28,13 @@ class DetailSuratViewModel(application: Application) : AndroidViewModel(applicat
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
 
+    // LiveData untuk refreshed data (BARU)
+    private val _refreshedSuratMasuk = MutableLiveData<SuratMasuk?>()
+    val refreshedSuratMasuk: LiveData<SuratMasuk?> = _refreshedSuratMasuk
+
+    private val _refreshedSuratKeluar = MutableLiveData<SuratKeluar?>()
+    val refreshedSuratKeluar: LiveData<SuratKeluar?> = _refreshedSuratKeluar
+
     fun updateSuratMasuk(id: Int, surat: SuratMasuk) {
         _isLoading.value = true
         viewModelScope.launch {
@@ -60,6 +67,29 @@ class DetailSuratViewModel(application: Application) : AndroidViewModel(applicat
                 _updateResult.value = Pair(false, e.message)
             } finally {
                 _isLoading.value = false
+            }
+        }
+    }
+
+    // Fungsi baru untuk refresh data dari database (BARU)
+    fun refreshSuratMasuk(id: Int) {
+        viewModelScope.launch {
+            try {
+                val surat = repository.getSuratMasukById(id)
+                _refreshedSuratMasuk.value = surat
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    fun refreshSuratKeluar(id: Int) {
+        viewModelScope.launch {
+            try {
+                val surat = repository.getSuratKeluarById(id)
+                _refreshedSuratKeluar.value = surat
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
