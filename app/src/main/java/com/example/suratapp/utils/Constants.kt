@@ -11,10 +11,14 @@ object Constants {
     const val STATUS_SUB_BAGIAN_UMUM = "Sub Bagian Umum"
     const val STATUS_SEKRETARIS = "Sekretaris"
     const val STATUS_KEPALA = "Kepala"
-    const val STATUS_DISPOSISI = "Disposisi ke Bidang"
+    const val STATUS_EKONOMI = "Ekonomi"
+    const val STATUS_SARPRAS = "Sarpras"
+    const val STATUS_SOSBUD = "Sosbud"
+    const val STATUS_LITBANG = "Litbang"
+    const val STATUS_PROGRAM = "Program"
+    const val STATUS_KEUANGAN = "Keuangan"
 
     // Status Surat Keluar
-    const val STATUS_BIDANG = "Bidang"
     const val STATUS_PENERIMA = "Penerima"
 
     // Request Codes
@@ -22,6 +26,7 @@ object Constants {
     const val REQUEST_STORAGE_PERMISSION = 101
 
     // File
-    const val MAX_FILE_SIZE_MB = 10
+    const val MAX_FILE_SIZE_MB = 2 // UBAH KE 2MB
+    const val MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024L // 2MB in bytes
     const val SUPABASE_BUCKET = "surat_files"
 }

@@ -1,4 +1,4 @@
-// InputSuratActivity.kt - Tambahkan validasi real-time
+// InputSuratActivity.kt - Update bagian launcher
 package com.example.suratapp.ui.input
 
 import android.Manifest
@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -20,7 +21,9 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import com.example.suratapp.R
 import com.example.suratapp.databinding.ActivityInputSuratBinding
+import com.example.suratapp.utils.Constants
 import com.example.suratapp.utils.DateUtils
+import com.example.suratapp.utils.FileUtils
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.delay
@@ -44,33 +47,87 @@ class InputSuratActivity : AppCompatActivity() {
 
     private val cameraLauncher = registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
         if (success) {
-            photoFile?.let {
-                selectedFileUri = Uri.fromFile(it)
-                selectedFileName = it.name
+            photoFile?.let { file ->
+                // Validasi ukuran file
+                val fileSize = file.length()
+
+                if (!FileUtils.isFileSizeValid(fileSize)) {
+                    val maxSizeMB = Constants.MAX_FILE_SIZE_MB
+                    Toast.makeText(
+                        this,
+                        "❌ Ukuran foto terlalu besar (${FileUtils.formatFileSize(fileSize)}). Maksimal $maxSizeMB MB",
+                        Toast.LENGTH_LONG
+                    ).show()
+
+                    // Delete file yang terlalu besar
+                    file.delete()
+                    return@registerForActivityResult
+                }
+
+                selectedFileUri = Uri.fromFile(file)
+                selectedFileName = file.name
                 selectedFileType = "image"
-                binding.tvFileName.text = "📷 ${it.name}"
-                Toast.makeText(this, "Foto berhasil diambil", Toast.LENGTH_SHORT).show()
+
+                binding.tvFileName.text = "📷 ${file.name} (${FileUtils.formatFileSize(fileSize)})"
+                Toast.makeText(this, "✅ Foto berhasil diambil", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
     private val pdfLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
+            // Validasi ukuran file
+            val fileSize = FileUtils.getFileSize(this, it)
+
+            if (!FileUtils.isFileSizeValid(fileSize)) {
+                val maxSizeMB = Constants.MAX_FILE_SIZE_MB
+                Toast.makeText(
+                    this,
+                    "❌ Ukuran file terlalu besar (${FileUtils.formatFileSize(fileSize)}). Maksimal $maxSizeMB MB",
+                    Toast.LENGTH_LONG
+                ).show()
+                return@registerForActivityResult
+            }
+
             selectedFileUri = it
             selectedFileName = getFileName(it)
             selectedFileType = "pdf"
-            binding.tvFileName.text = "📄 $selectedFileName"
-            Toast.makeText(this, "File PDF dipilih", Toast.LENGTH_SHORT).show()
+
+            binding.tvFileName.text = "📄 $selectedFileName (${FileUtils.formatFileSize(fileSize)})"
+            Toast.makeText(this, "✅ File PDF dipilih", Toast.LENGTH_SHORT).show()
         }
     }
 
     private val imageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
+            // Validasi ukuran file
+            val fileSize = FileUtils.getFileSize(this, it)
+
+            if (!FileUtils.isFileSizeValid(fileSize)) {
+                val maxSizeMB = Constants.MAX_FILE_SIZE_MB
+
+                // Tanya user apakah mau compress
+                AlertDialog.Builder(this)
+                    .setTitle("File Terlalu Besar")
+                    .setMessage("Ukuran file ${FileUtils.formatFileSize(fileSize)}, melebihi batas $maxSizeMB MB.\n\nApakah Anda ingin mengkompress gambar?")
+                    .setPositiveButton("Compress") { dialog, _ ->
+                        compressAndSelectImage(it)
+                        dialog.dismiss()
+                    }
+                    .setNegativeButton("Batal") { dialog, _ ->
+                        dialog.dismiss()
+                    }
+                    .show()
+
+                return@registerForActivityResult
+            }
+
             selectedFileUri = it
             selectedFileName = getFileName(it)
             selectedFileType = "image"
-            binding.tvFileName.text = "🖼️ $selectedFileName"
-            Toast.makeText(this, "Gambar dipilih", Toast.LENGTH_SHORT).show()
+
+            binding.tvFileName.text = "🖼️ $selectedFileName (${FileUtils.formatFileSize(fileSize)})"
+            Toast.makeText(this, "✅ Gambar dipilih", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -103,9 +160,6 @@ class InputSuratActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.title = if (suratType == "masuk") "Tambah Surat Masuk" else "Tambah Surat Keluar"
-
-        // Update label berdasarkan tipe surat
-        updateLabels()
     }
 
     private fun updateLabels() {
@@ -118,9 +172,30 @@ class InputSuratActivity : AppCompatActivity() {
 
     private fun setupStatusSpinner() {
         val statusOptions = if (suratType == "masuk") {
-            arrayOf("Sub Bagian Umum", "Sekretaris", "Kepala", "Ekonomi", "Sarpras", "Sosbud", "Litbang", "Program", "Keuangan")
+            arrayOf(
+                "Sub Bagian Umum",
+                "Sekretaris",
+                "Kepala",
+                "Ekonomi",
+                "Sarpras",
+                "Sosbud",
+                "Litbang",
+                "Program",
+                "Keuangan"
+            )
         } else {
-            arrayOf("Sub Bagian Umum", "Sekretaris", "Kepala", "Ekonomi", "Sarpras", "Sosbud", "Litbang", "Program", "Keuangan", "Penerima")
+            arrayOf(
+                "Sub Bagian Umum",
+                "Sekretaris",
+                "Kepala",
+                "Ekonomi",
+                "Sarpras",
+                "Sosbud",
+                "Litbang",
+                "Program",
+                "Keuangan",
+                "Penerima"
+            )
         }
 
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, statusOptions)
@@ -138,7 +213,6 @@ class InputSuratActivity : AppCompatActivity() {
                     this@InputSuratActivity,
                     { _, year, month, day ->
                         calendar.set(year, month, day)
-                        // Tampilkan dalam format Indonesia
                         setText(DateUtils.formatToDisplay(DateUtils.fromDatePicker(year, month, day)))
                     },
                     calendar.get(Calendar.YEAR),
@@ -156,7 +230,6 @@ class InputSuratActivity : AppCompatActivity() {
                     this@InputSuratActivity,
                     { _, year, month, day ->
                         calendar.set(year, month, day)
-                        // Tampilkan dalam format Indonesia
                         setText(DateUtils.formatToDisplay(DateUtils.fromDatePicker(year, month, day)))
                     },
                     calendar.get(Calendar.YEAR),
@@ -168,7 +241,6 @@ class InputSuratActivity : AppCompatActivity() {
     }
 
     private fun setupDuplicateValidation() {
-        // Real-time check untuk nomor surat
         binding.etNomorSurat.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -176,7 +248,7 @@ class InputSuratActivity : AppCompatActivity() {
                 checkDuplicateJob?.cancel()
                 if (s.toString().isNotEmpty()) {
                     checkDuplicateJob = mainScope.launch {
-                        delay(500) // Debounce 500ms
+                        delay(500)
                         val nomorAgenda = binding.etNomorAgenda.text.toString()
                         if (nomorAgenda.isNotEmpty()) {
                             viewModel.checkDuplicate(suratType, s.toString(), nomorAgenda)
@@ -188,7 +260,6 @@ class InputSuratActivity : AppCompatActivity() {
             }
         })
 
-        // Real-time check untuk nomor agenda
         binding.etNomorAgenda.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -196,7 +267,7 @@ class InputSuratActivity : AppCompatActivity() {
                 checkDuplicateJob?.cancel()
                 if (s.toString().isNotEmpty()) {
                     checkDuplicateJob = mainScope.launch {
-                        delay(500) // Debounce 500ms
+                        delay(500)
                         val nomorSurat = binding.etNomorSurat.text.toString()
                         if (nomorSurat.isNotEmpty()) {
                             viewModel.checkDuplicate(suratType, nomorSurat, s.toString())
@@ -222,7 +293,7 @@ class InputSuratActivity : AppCompatActivity() {
     private fun showFilePickerDialog() {
         val options = arrayOf("Pilih Gambar", "Pilih PDF")
         AlertDialog.Builder(this)
-            .setTitle("Pilih Jenis File")
+            .setTitle("Pilih Jenis File (Max ${Constants.MAX_FILE_SIZE_MB}MB)")
             .setItems(options) { dialog, which ->
                 when (which) {
                     0 -> imageLauncher.launch("image/*")
@@ -230,6 +301,35 @@ class InputSuratActivity : AppCompatActivity() {
                 }
             }
             .show()
+    }
+
+    private fun compressAndSelectImage(uri: Uri) {
+        binding.progressBar.visibility = View.VISIBLE
+        binding.tvFileName.text = "Mengkompress gambar..."
+
+        mainScope.launch {
+            try {
+                val compressedFile = FileUtils.compressImageIfNeeded(this@InputSuratActivity, uri)
+
+                if (compressedFile != null) {
+                    selectedFileUri = Uri.fromFile(compressedFile)
+                    selectedFileName = compressedFile.name
+                    selectedFileType = "image"
+
+                    val fileSize = compressedFile.length()
+                    binding.tvFileName.text = "🖼️ ${compressedFile.name} (${FileUtils.formatFileSize(fileSize)})"
+                    Toast.makeText(this@InputSuratActivity, "✅ Gambar berhasil dikompress", Toast.LENGTH_SHORT).show()
+                } else {
+                    binding.tvFileName.text = "Belum ada file dipilih"
+                    Toast.makeText(this@InputSuratActivity, "❌ Gagal mengkompress gambar", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                binding.tvFileName.text = "Belum ada file dipilih"
+                Toast.makeText(this@InputSuratActivity, "❌ Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            } finally {
+                binding.progressBar.visibility = View.GONE
+            }
+        }
     }
 
     private fun checkCameraPermission() {
@@ -293,7 +393,6 @@ class InputSuratActivity : AppCompatActivity() {
             return false
         }
 
-        // Check if there's duplicate error
         if (binding.tilNomorSurat.error != null || binding.tilNomorAgenda.error != null) {
             Toast.makeText(this, "Perbaiki error terlebih dahulu", Toast.LENGTH_SHORT).show()
             return false
@@ -326,10 +425,8 @@ class InputSuratActivity : AppCompatActivity() {
     }
 
     private fun observeViewModel() {
-        // Observe duplicate check result
         viewModel.duplicateCheck.observe(this) { result ->
             if (result.error != null) {
-                // Handle error
                 return@observe
             }
 
@@ -346,7 +443,6 @@ class InputSuratActivity : AppCompatActivity() {
             }
         }
 
-        // Observe save result
         viewModel.saveResult.observe(this) { result ->
             if (result.first) {
                 Toast.makeText(this, "✅ Data berhasil disimpan", Toast.LENGTH_SHORT).show()
