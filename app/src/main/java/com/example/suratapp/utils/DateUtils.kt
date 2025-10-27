@@ -21,7 +21,13 @@ object DateUtils {
     }
 
     // Format untuk display timestamp (Indonesia)
-    private val timestampDisplayFormat = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale("id", "ID"))
+    private val timestampDisplayFormat = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale("id", "ID")).apply {
+        timeZone = TimeZone.getDefault() // Otomatis pakai timezone device
+    }
+
+    private val timestampParseFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
 
     /**
      * Convert dari database format (yyyy-MM-dd) ke display format (dd-MM-yyyy)
@@ -49,24 +55,13 @@ object DateUtils {
         }
     }
 
-    /**
-     * Format tanggal dengan nama bulan panjang (01 Januari 2025)
-     */
-    fun formatToLongDisplay(dateString: String?): String {
-        if (dateString.isNullOrEmpty()) return ""
-        return try {
-            val date = dbFormat.parse(dateString)
-            displayFormatLong.format(date ?: Date())
-        } catch (e: Exception) {
-            dateString
-        }
-    }
 
     /**
      * Get timestamp saat ini dalam format database (ISO 8601)
      */
     fun getCurrentTimestamp(): String {
-        return timestampDbFormat.format(Date())
+        val localTime = Date()
+        return timestampDbFormat.format(localTime)
     }
 
     /**
@@ -74,18 +69,35 @@ object DateUtils {
      */
     fun formatTimestampToDisplay(timestampString: String?): String {
         if (timestampString.isNullOrEmpty()) return ""
+
         return try {
-            // Parse dari berbagai format timestamp yang mungkin
-            val date = try {
-                timestampDbFormat.parse(timestampString)
-            } catch (e: Exception) {
-                // Fallback ke format timestamp Supabase yang umum
-                SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).parse(timestampString)
+            val date = parseTimestamp(timestampString)
+
+            if (date != null) {
+                timestampDisplayFormat.format(date)
+            } else {
+                timestampString
             }
-            timestampDisplayFormat.format(date ?: Date())
         } catch (e: Exception) {
+            e.printStackTrace()
             timestampString
         }
+    }
+
+    private fun parseTimestamp(timestampString: String): Date? {
+        val formats = listOf(
+            timestampParseFormat, // yyyy-MM-dd'T'HH:mm:ss
+        )
+
+        for (format in formats) {
+            try {
+                return format.parse(timestampString)
+            } catch (e: Exception) {
+                // Continue to next format
+            }
+        }
+
+        return null
     }
 
     /**
