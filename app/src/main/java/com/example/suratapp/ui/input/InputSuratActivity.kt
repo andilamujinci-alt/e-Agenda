@@ -1,4 +1,4 @@
-// InputSuratActivity.kt - Update bagian launcher
+// InputSuratActivity.kt - Updated with auto compress camera
 package com.example.suratapp.ui.input
 
 import android.Manifest
@@ -50,29 +50,68 @@ class InputSuratActivity : AppCompatActivity() {
         registerForActivityResult(ActivityResultContracts.TakePicture()) { success ->
             if (success) {
                 photoFile?.let { file ->
-                    // Validasi ukuran file
                     val fileSize = file.length()
+                    val twoMB = 2 * 1024 * 1024 // 2MB dalam bytes
 
-                    if (!FileUtils.isFileSizeValid(fileSize)) {
-                        val maxSizeMB = Constants.MAX_FILE_SIZE_MB
-                        Toast.makeText(
-                            this,
-                            "❌ Ukuran foto terlalu besar (${FileUtils.formatFileSize(fileSize)}). Maksimal $maxSizeMB MB",
-                            Toast.LENGTH_LONG
-                        ).show()
+                    if (fileSize > twoMB) {
+                        // Auto compress jika lebih dari 2MB
+                        binding.progressBar.visibility = View.VISIBLE
+                        binding.tvFileName.text = "Mengkompress foto..."
 
-                        // Delete file yang terlalu besar
-                        file.delete()
-                        return@registerForActivityResult
+                        mainScope.launch {
+                            try {
+                                val compressedFile = FileUtils.compressImageIfNeeded(
+                                    this@InputSuratActivity,
+                                    Uri.fromFile(file)
+                                )
+
+                                if (compressedFile != null) {
+                                    selectedFileUri = Uri.fromFile(compressedFile)
+                                    selectedFileName = compressedFile.name
+                                    selectedFileType = "image"
+
+                                    val compressedSize = compressedFile.length()
+                                    binding.tvFileName.text =
+                                        "📷 ${compressedFile.name} (${FileUtils.formatFileSize(compressedSize)})"
+                                    Toast.makeText(
+                                        this@InputSuratActivity,
+                                        "✅ Foto otomatis dikompress dari ${FileUtils.formatFileSize(fileSize)} ke ${FileUtils.formatFileSize(compressedSize)}",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+
+                                    // Delete file asli
+                                    file.delete()
+                                } else {
+                                    binding.tvFileName.text = "Belum ada file dipilih"
+                                    Toast.makeText(
+                                        this@InputSuratActivity,
+                                        "❌ Gagal mengkompress foto",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    file.delete()
+                                }
+                            } catch (e: Exception) {
+                                binding.tvFileName.text = "Belum ada file dipilih"
+                                Toast.makeText(
+                                    this@InputSuratActivity,
+                                    "❌ Error: ${e.message}",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                                file.delete()
+                            } finally {
+                                binding.progressBar.visibility = View.GONE
+                            }
+                        }
+                    } else {
+                        // Ukuran sudah dibawah 2MB, langsung gunakan
+                        selectedFileUri = Uri.fromFile(file)
+                        selectedFileName = file.name
+                        selectedFileType = "image"
+
+                        binding.tvFileName.text =
+                            "📷 ${file.name} (${FileUtils.formatFileSize(fileSize)})"
+                        Toast.makeText(this, "✅ Foto berhasil diambil", Toast.LENGTH_SHORT).show()
                     }
-
-                    selectedFileUri = Uri.fromFile(file)
-                    selectedFileName = file.name
-                    selectedFileType = "image"
-
-                    binding.tvFileName.text =
-                        "📷 ${file.name} (${FileUtils.formatFileSize(fileSize)})"
-                    Toast.makeText(this, "✅ Foto berhasil diambil", Toast.LENGTH_SHORT).show()
                 }
             }
         }
