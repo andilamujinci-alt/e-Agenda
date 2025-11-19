@@ -134,7 +134,7 @@ This project is private and proprietary.
 
 **Nama Anda**
 - GitHub: [@andilamujinci-alt](https://github.com/andilamujinci-alt)
-- Email: email@anda.com
+- Email: andilamujinci@gmail.com
 
 ## 🙏 Acknowledgments
 
